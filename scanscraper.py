@@ -1,33 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 26 16:55:40 2020
-
-@author: bj
-
-To do:
-    Make dict of prods
-    Make adjustments (get h1) for single cat. pages
-    setup add to order (https://secure.scan.co.uk/web/basket/addproduct/\
-    2987654)
-    add notifier functionality
-    setup pi integration
-
-    ignore data-price = 999999.0 - indicator unreleased
-    if no 999999.0, check instock
-
-    {cat1: [{'prodInfo': {'name':xxx,...,}, ..., ], cat2: [...]}
-"""
 import requests
 from bs4 import BeautifulSoup
-import time
 import json
 from typing import TypeVar
 
 T = TypeVar('T')
 
 ssdurl = "https://www.scan.co.uk/shop/computer-hardware/solid-state-drives/all"
-ssdurl = "https://www.scan.co.uk/shop/computer-hardware/gpu-nvidia/nvidia-geforce-rtx-3080-graphics-cards"
+ssdurl = "https://www.scan.co.uk/shop/computer-hardware/gpu-nvidia/\
+                                    nvidia-geforce-rtx-3080-graphics-cards"
 
 
 class ScanScraper():
@@ -45,8 +27,8 @@ class ScanScraper():
         adjustedQuery = searchQuery.replace(" ", "+")
         return cls(baseUrl+adjustedQuery, threshold=queryResults)
 
-    def alterURL(self, url: str):
-        self.scrape(url)
+    def alterURL(self, url: str, **kwargs):
+        self.scrape(url, **kwargs)
 
     def scrape(self, url: str, threshold: int = None):
         response = ScanScraper.makeRequest(url)
