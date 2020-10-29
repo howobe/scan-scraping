@@ -4,29 +4,41 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag as bs4Tag
 import json
-from dicttools import DictTools
+import dicttools
 import pandas as pd
 
 
-ssdurl = "https://www.scan.co.uk/shop/computer-hardware/solid-state-drives/all"
-ssdurl = "https://www.scan.co.uk/shop/computer-hardware/gpu-nvidia/\
-                                    nvidia-geforce-rtx-3080-graphics-cards"
+class WebScraper():
+
+    def __init__(self, url: str):
+        self.url = url
+        self.soup = self.getParsedResponse()
+
+    @staticmethod
+    def makeRequest(url: str) -> requests.models.Response:
+        return requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+
+    @staticmethod
+    def parse(response: requests.models.Response, parser: str = "lxml"
+              ) -> BeautifulSoup:
+        return BeautifulSoup(response.content, parser)
+
+    def getParsedResponse(self):
+        self.response = WebScraper.makeRequest(self.url)
+        return WebScraper.parse(self.response)
 
 
-class ScanScraper():
+class ScanScraper(WebScraper):
 
     baseUrl = "https://www.scan.co.uk"
 
-    def __init__(self, url: str, scrape=True, **kwargs):
-        self.url = url
-        self.response = ScanScraper.makeRequest(url)
-        self.soup = ScanScraper.parse(self.response)
-        if scrape:
-            self.scrape(**kwargs)
+    def __init__(self, url: str, **kwargs):
+        super().__init__(url)
+        self.scrape(**kwargs)
 
     @classmethod
-    def fromSearchQuery(cls, searchQuery: str, queryResults: int):
-        searchUrl = ScanScraper.createQueryUrl(cls.base, searchQuery)
+    def fromSearchQuery(cls, searchQuery: str, queryResults: int = None):
+        searchUrl = ScanScraper.createQueryUrl(cls.baseUrl, searchQuery)
         return cls(searchUrl, threshold=queryResults)
 
     @classmethod
@@ -56,7 +68,7 @@ class ScanScraper():
         self.scrape(url, **kwargs)
 
     def getStatusCode(self) -> int:
-        return self.resposne.status_code
+        return self.response.status_code
 
     def scrape(self, threshold: int = None):
         self.resetData()
@@ -93,7 +105,7 @@ class ScanScraper():
 
     def _getProductColumnList(self, category: bs4Tag) -> list:
         return category.find_all("div", {"class":
-                                         "productsCont productList list"})
+                                         "productsCont"})
 
     def _getProductData(self, columns: list) -> tuple:
         prods, lns, rCols = [], [], []
@@ -133,7 +145,7 @@ class ScanScraper():
 
     def recount(self):
         self.stats["cats"] = len(self.products)
-        flattened = DictTools.flatten(self.products, "cat")
+        flattened = dicttools.flatten(self.products, "cat")
         self.reset()
         for prod in flattened:
             self.stats["items"] += 1
@@ -166,11 +178,11 @@ class ScanScraper():
         self.dataAttrs.append(attribute)
 
     def printCategories(self):
-        DictTools.printDict(self.products, keys=True)
+        dicttools.printDict(self.products, keys=True)
 
     def printProducts(self):
         for cat in self.products.keys():
-            DictTools.printDict(self.products[cat], values=True)
+            dicttools.printDict(self.products[cat], values=True)
 
     def createJsonFile(self, filename: str):
         if filename.strip(".") == filename:
@@ -188,17 +200,8 @@ class ScanScraper():
         self.products = {}
 
     def createDataFrame(self) -> pd.core.frame.DataFrame:
-        flattened = DictTools.flatten(self.products, "category")
+        flattened = dicttools.flatten(self.products, "category")
         return pd.DataFrame.from_dict(flattened)
-
-    @staticmethod
-    def makeRequest(url: str) -> requests.models.Response:
-        return requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-
-    @staticmethod
-    def parse(response: requests.models.Response, parser: str = "lxml"
-              ) -> BeautifulSoup:
-        return BeautifulSoup(response.content, parser)
 
     @staticmethod
     def createQueryUrl(baseUrl: str, queryParameters: str) -> str:
