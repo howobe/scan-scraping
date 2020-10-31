@@ -7,7 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
 from typing import TypeVar
 import json
-import utils
 
 T = TypeVar('T')
 
@@ -25,7 +24,6 @@ class ElementTracker():
         self.element = {'element': element, 'hidden': hidden}
         if method in By.__dict__.values():
             self.element["method"] = method
-            print("ok")
         else:
             print("Invalid method chosen. Consult 'By' attributes.")
 
@@ -41,9 +39,7 @@ class ElementTracker():
         self.actElement = {'element': actElement, 'hidden': hidden}
         if method in By.__dict__.values():
             self.actElement["method"] = method
-            print("ok")
         else:
-            print("Invalid method chosen. Consult 'By' attributes.")
             return
 
     def act(self, dictKeys: T = None):
@@ -58,10 +54,13 @@ class ElementTracker():
         if not isinstance(dictKeys, list):
             dictKeys = list(dictKeys)
         for el in actElStruct:
-            res.extend([el[k] for k in dictKeys])
+            try:
+                res.extend([el[k] for k in dictKeys])
+            except KeyError:
+                print(f"A key does not exist")
         return res
 
-    def monitor(self):
+    def findElement(self):
         self.driver = webdriver.Firefox(options=self.driverOpts)
         self.driver.get(self.url)
         self._element = WebDriverWait(self.driver, 5).until(
@@ -81,14 +80,12 @@ class ElementTracker():
         if not self.trigger["isKVPair"]:
             if getattr(self.elementText.lower(), self.trigger["comp"])(
                     self.trigger["value"]):
-                self.announce()
                 return True
         else:
             elementStruct = self._jsonHandler(self.elementText)
             for i in elementStruct:
                 if getattr(i[self.trigger["key"]], self.trigger["comp"])(
                         self.trigger["value"]):
-                    self.announce()
                     return True
         return False
 
@@ -98,6 +95,5 @@ class ElementTracker():
             elementStruct = list(elementStruct)
         return elementStruct
 
-    def announce(self):
-        print("found it")
-
+    def end(self):
+        self.driver.close()

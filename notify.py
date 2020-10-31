@@ -1,13 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import abc
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from slack import WebClient
+from slack.errors import SlackApiError
 
 
-class Notify():
-    """Class provides methods of notify user about event of interest"""
+class NotifierInterface(metaclass=abc.ABCMeta):
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, 'send') and
+                callable(subclass.send) or
+                NotImplemented)
+
+    @abc.abstractmethod
+    def send(self):
+        raise NotImplementedError
+
+
+class EmailNotification(NotifierInterface):
 
     def __init__(self, emailAddress: str, emailPsk: str, port: int = 465):
         self.user = {"email": emailAddress, "psk": emailPsk}
@@ -37,3 +52,23 @@ class Notify():
                 as server:
             server.login(self.user["email"], self.user["psk"])
             server.sendmail(self.user["email"], self.recipients, msg)
+
+
+class SlackNotification(NotifierInterface):
+
+    def __init__(self, apiToken: str):
+        self.client = WebClient(apiToken)
+
+    def setBody(self, message):
+        self.message = message
+
+    def send(self):
+        try:
+            response = self.client.chat_postMessage(
+                channel='#notifications',
+                text=self.message)
+            assert response["message"]["text"] == self.message
+        except SlackApiError as e:
+            assert e.response["ok"] is False
+            assert e.response["error"]
+            print(f"Got an error: {e.response['error']}")
