@@ -7,6 +7,10 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from slack import WebClient
 from slack.errors import SlackApiError
+import logging
+
+slackLogger = logging.getLogger("slack")
+emailLogger = logging.getLogger("email")
 
 
 class NotifierInterface(metaclass=abc.ABCMeta):
@@ -58,17 +62,18 @@ class SlackNotification(NotifierInterface):
 
     def __init__(self, apiToken: str):
         self.client = WebClient(apiToken)
+        slackLogger.info("Initiating Slack WebClient...")
 
     def setBody(self, message):
         self.message = message
+        slackLogger.debug("Message set: " + self.message)
 
     def send(self):
         try:
             response = self.client.chat_postMessage(
                 channel='#notifications',
                 text=self.message)
-            assert response["message"]["text"] == self.message
         except SlackApiError as e:
             assert e.response["ok"] is False
             assert e.response["error"]
-            print(f"Got an error: {e.response['error']}")
+            slackLogger.exception(e)
