@@ -94,7 +94,7 @@ class ElementTracker():
         logger.debug("Element text: " + self.elementText)
 
     def unhide(self, driverElement, element):
-        logger.debug("Unhiding element: " + str(driverElement))
+        logger.debug("Unhiding element: " + str(element))
         self.driver.execute_script("arguments[0].style.display = 'block';",
                                    driverElement)
         return self.driver.find_element(element["method"],
