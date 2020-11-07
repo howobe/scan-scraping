@@ -16,10 +16,9 @@ logger = logging.getLogger("elementTracker")
 
 class ElementTracker():
 
-    def __init__(self, headless=True, geckoPath='geckodriver'):
+    def __init__(self, headless=True):
         self.driverOpts = Options()
         self.driverOpts.headless = headless
-        self.gdPath = geckoPath
         logger.debug("Driver options: headless=" + str(headless))
 
     def setUrl(self, url: str):
@@ -78,8 +77,7 @@ class ElementTracker():
 
     def findElement(self):
         logger.debug("Starting webdriver...")
-        self.driver = webdriver.Firefox(options=self.driverOpts,
-                                        executable_path=self.gdPath)
+        self.driver = webdriver.Firefox(options=self.driverOpts)
         logger.debug("Driver loaded, loading webpage...")
         self.driver.get(self.url)
         logger.debug("Webpage loaded")
